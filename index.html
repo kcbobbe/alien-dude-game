@@ -1,0 +1,433 @@
+<!doctype html> 
+<html lang="en"> 
+<head> 
+    <meta charset="UTF-8" />
+    <title>Alien Dude</title>
+    <script src="//cdn.jsdelivr.net/npm/phaser@3.11.0/dist/phaser.js"></script>
+    <style type="text/css">
+        body {
+            text-align:center;
+        }
+        html {
+            background-color : black;
+        }
+    </style>
+</head>
+<body>
+
+<script type="text/javascript">
+
+var config = {
+    type: Phaser.AUTO,
+    width: 800,
+    height: 600,
+    physics: {
+        default: 'arcade',
+        arcade: {
+            gravity: { y: 350 },
+            debug: false
+        }
+    },
+    scene: {
+        preload: preload,
+        create: create,
+        update: update
+    }
+};
+
+var player;
+var eyes;
+var platforms;
+var platformtop;
+var platformsmall;
+var redBall;
+var greenBall;
+var redEye;
+var greenEye;
+
+var cursors;
+var score = 0;
+var gameOver = false;
+var scoreText;
+var background_music;
+
+var red = false;
+var green = false;
+
+var allGreenCollected = false
+var allRedCollected = false
+
+var game = new Phaser.Game(config);
+
+  
+function preload ()
+{
+    // this.load.audio('background_music', 'assets/Benthic.mp3');
+    this.load.audio('background_music', '//cdn.glitch.com/b1eca78b-2178-4b58-a7ca-b932f7cf5f50%2FBenthic.mp3?1549479897499');
+    this.load.audio('jump', '//cdn.glitch.com/b1eca78b-2178-4b58-a7ca-b932f7cf5f50%2Fjump.wav?1549482401779')
+    this.load.audio('coin','//cdn.glitch.com/b1eca78b-2178-4b58-a7ca-b932f7cf5f50%2Fcoin.wav?1549482401726')
+    this.load.audio('hit', '//cdn.glitch.com/b1eca78b-2178-4b58-a7ca-b932f7cf5f50%2Fhit.wav?1549482401914')
+    this.load.audio('portal', '//cdn.glitch.com/b1eca78b-2178-4b58-a7ca-b932f7cf5f50%2Fportal.wav?1549482401886')
+    this.load.image('sky', '//cdn.glitch.com/b1eca78b-2178-4b58-a7ca-b932f7cf5f50%2Fsky1.png?1549389836255');
+    this.load.image('ground', '//cdn.glitch.com/b1eca78b-2178-4b58-a7ca-b932f7cf5f50%2Fplatformblack.png?1549389835967');
+    this.load.image('top', '//cdn.glitch.com/b1eca78b-2178-4b58-a7ca-b932f7cf5f50%2Fplatformblacktop%20copy.png?1549478073783')
+
+    // this.load.image('platformRed','assets/platformred.png')
+    // this.load.image('platformGreen', 'assets/platformgreen.png')
+    // this.load.image('eye', 'assets/eye.png');
+    this.load.image('platformsmall', '//cdn.glitch.com/b1eca78b-2178-4b58-a7ca-b932f7cf5f50%2Fplatformblacksmall.png?1549489076390')
+    this.load.image('redEye', '//cdn.glitch.com/b1eca78b-2178-4b58-a7ca-b932f7cf5f50%2FredEye.png?1549389835872')
+    this.load.image('greenEye', '//cdn.glitch.com/b1eca78b-2178-4b58-a7ca-b932f7cf5f50%2FgreenEye.png?1549389835769')
+    this.load.image('redBall', '//cdn.glitch.com/b1eca78b-2178-4b58-a7ca-b932f7cf5f50%2FredBall.png?1549389835790')
+    this.load.image('greenBall', '//cdn.glitch.com/b1eca78b-2178-4b58-a7ca-b932f7cf5f50%2FgreenBall.png?1549389835729')
+    this.load.spritesheet('alien-dude', '//cdn.glitch.com/b1eca78b-2178-4b58-a7ca-b932f7cf5f50%2Falien-dude.png?1549389835515', { frameWidth: 17, frameHeight: 26 });
+}
+
+function create ()
+{
+    // var music = this.sound.add('background_music');
+    // // background_music.setLoop(true);
+    // music.play();
+    // this.music.play('background_music');
+    bgmusic = game.sound.add("background_music");
+    bgmusic.volume = 0.4;
+    bgmusic.loop = true;
+    bgmusic.play();
+
+    jumpSound = game.sound.add("jump");
+    coinSound = game.sound.add("coin");
+    hitSound = game.sound.add("hit");
+    portalSound = game.sound.add("portal");
+    //  A simple background for our game
+    this.add.image(400, 300, 'sky');
+
+    //  The platforms group contains the ground and the 2 ledges we can jump on
+    platforms = this.physics.add.staticGroup();
+    platformtop =  this.physics.add.staticGroup();
+    platformtop.create(400, 1, 'top').setScale(2).refreshBody();
+    
+    platformsmall = this.physics.add.staticGroup();
+    // platformsmall.create(400, 300, 'platformsmall')
+
+    //  Here we create the ground.
+    //  Scale it to fit the width of the game (the original sprite is 400x32 in size)
+    platforms.create(400, 600, 'ground').setScale(2).refreshBody();
+
+    // platformRed = this.physics.add.staticGroup();
+    //  Now let's create some ledges
+
+    // platformRed.create(600, 400, 'platformRed');
+    platforms.create(80, 450, 'ground');
+    platforms.create(720, 450, 'ground');
+    platforms.create(400, 300, 'ground');
+    platforms.create(0, 150, 'ground');
+    platforms.create(800, 150, 'ground');
+  
+    // platformsmall.create(80, 450, 'platformsmall');
+    // platformsmall.create(720, 450, 'platformsmall');
+
+
+    redBall = this.physics.add.group({
+        key:'redBall',
+        setXY: { x: 100, y: 540}
+    })
+
+    // redBall.setScale(2)
+
+    redBall.children.iterate(function (child){
+        child.setScale(2);
+    })
+
+    greenBall = this.physics.add.group({
+        key:'greenBall',
+        setXY: { x: 700, y: 540}
+    })
+
+    greenBall.children.iterate(function (child){
+        child.setScale(2);
+    })
+
+    // The player and its settings
+    player = this.physics.add.sprite(400, 400, 'alien-dude').setScale(2);
+
+    //  Player physics properties. Give the little guy a slight bounce.
+    player.setBounce(0.2);
+    player.setCollideWorldBounds(false);
+
+    //  Our player animations, turning, walking left and walking right.
+    this.anims.create({
+        key: 'left',
+        frames: this.anims.generateFrameNumbers('alien-dude', { start: 3, end: 5 }),
+        frameRate: 5,
+        repeat: -1
+    });
+
+    this.anims.create({
+        key: 'turn',
+        frames: [ { key: 'alien-dude', frame: 2 } ],
+        frameRate: 20
+    });
+
+    this.anims.create({
+        key: 'right',
+        frames: this.anims.generateFrameNumbers('alien-dude', { start: 0, end: 1 }),
+        frameRate: 5,
+        repeat: -1
+    });
+
+    //  Input Events
+    cursors = this.input.keyboard.createCursorKeys();
+
+    //  Some eyes to collect, 12 in total, evenly spaced 70 pixels apart along the x axis
+    redEyes = this.physics.add.group({
+        key: 'redEye',
+        repeat: 2,
+        setXY: { x: 12, y: 5, stepX: 280 }
+    });
+
+    redEyes.children.iterate(function (child) {
+
+        //  Give each eye a slightly different bounce
+        // child.setBounceY(Phaser.Math.FloatBetween(0, 1));
+        child.setBounce(1);
+        child.setCollideWorldBounds(false);
+        child.setVelocity(Phaser.Math.Between(-200, 200), 5);
+        child.allowGravity = false;
+
+    });
+
+     greenEyes = this.physics.add.group({
+        key: 'greenEye',
+        repeat: 2,
+        setXY: { x: 82, y: 5, stepX: 280 }
+    });
+
+    greenEyes.children.iterate(function (child) {
+
+        //  Give each eye a slightly different bounce
+        // child.setBounceY(Phaser.Math.FloatBetween(0.4, 0.8));
+        child.setBounce(1);
+        child.setCollideWorldBounds(false);
+        child.setVelocity(Phaser.Math.Between(-100, 100), 20);
+        child.allowGravity = false;
+
+    });
+
+    
+
+
+    //  The score
+    scoreText = this.add.text(16, 16, 'score: 0', { fontSize: '32px', fill: '#00ff00' });
+
+    //  Collide the player and the eyes with the platforms
+    this.physics.add.collider(player, platforms);
+    this.physics.add.collider(player, platformtop);
+    this.physics.add.collider(player, platformsmall);
+
+    
+    this.physics.add.collider(redBall, platforms);
+    this.physics.add.collider(greenBall, platforms)
+    this.physics.add.collider(redEyes, platforms);
+    this.physics.add.collider(greenEyes, platforms);
+    this.physics.add.collider(redEyes, platformtop);
+    this.physics.add.collider(greenEyes, platformtop);
+    this.physics.add.collider(redEyes, platformsmall);
+    this.physics.add.collider(greenEyes, platformsmall);
+
+
+    //  Checks to see if the player overlaps with any of the items, if he does call the collect/touch function
+
+    this.physics.add.overlap(player, redBall, touchRedBall, null, this);
+
+    this.physics.add.overlap(player, greenBall, touchGreenBall, null, this);
+
+    this.physics.add.overlap(player, redEyes, collectRedEye, null, this);
+
+    this.physics.add.overlap(player, greenEyes, collectGreenEye, null, this);
+
+    // this.physics.add.collider(player, bombs, hitBomb, null, this);
+    
+
+}
+
+function update ()
+{
+    if (gameOver)
+    {
+        bgmusic.stop()
+        return;
+    }
+    this.physics.world.wrap(player, 0);
+    this.physics.world.wrap(redEyes, 0);
+    this.physics.world.wrap(greenEyes, 0);
+
+
+
+    // if (red === true){
+    //     var redCollider = new Collider(world, false, player, platformRed)
+    //     // var redPlatformCollider = this.physics.add.collider(player, platformRed);
+    //     console.log(redCollider)
+    //     // this.physics.add.redCollider;
+
+    // }
+    // if (green === true) {
+    //     // this.physics.remove.collider(player, platformRed, touchPlatformRed, null, this);
+    //     // this.physics.removeCollider(player, platformRed);
+    //     // this.physics.world.colliders.destroy()
+        
+        
+    // }
+
+
+    if (cursors.left.isDown)
+    {
+        player.setVelocityX(-160);
+
+        player.anims.play('left', true);
+    }
+    else if (cursors.right.isDown)
+    {
+        player.setVelocityX(160);
+
+        player.anims.play('right', true);
+    }
+    else
+    {
+        player.setVelocityX(0);
+
+        player.anims.play('turn');
+    }
+
+    if (cursors.up.isDown && player.body.touching.down)
+    {
+        player.setVelocityY(-340);
+        jumpSound.play();
+    
+
+
+
+    }
+}
+
+
+
+
+
+function collectRedEye (player, redEye)
+{   
+    if (red === true) {
+        coinSound.play();
+        redEye.disableBody(true, true);
+        score += 1;
+        scoreText.setText('Score: ' + score);
+    }
+    else if (green === true) {
+        hitSound.play();
+        this.physics.pause();
+        player.setTint(0x000000);
+        player.anims.play('turn');
+        scoreText.setText('GAME OVER ... your final score: ' + score);
+        gameOver = true;
+    }
+
+    
+    
+    if (redEyes.countActive(true) === 0)
+    {  
+        allRedCollected = true
+    }
+        //  A new batch of eyes to collect
+    if (allRedCollected && allGreenCollected) {
+        green = false;
+        red = false;
+        player.setTint(0xffffff);
+        redEyes.children.iterate(function (child) {
+            child.enableBody(true, child.x, 10, true, true);
+            child.setVelocity(Phaser.Math.Between(-200 , 200), 5);
+
+
+        });
+        greenEyes.children.iterate(function (child) {
+            child.enableBody(true, child.x, 10, true, true);
+            child.setVelocity(Phaser.Math.Between(-150, 150), 20);
+
+        });
+        allRedCollected = false
+        allGreenCollected=false
+        }
+       
+
+
+}
+
+function collectGreenEye (player, greenEye)
+{   
+    if (green===true){
+        coinSound.play();
+        greenEye.disableBody(true, true);
+        score += 1;
+        scoreText.setText('Score: ' + score);
+    }
+    else if ( red ===true){
+        hitSound.play();
+        this.physics.pause();
+        player.setTint(0x000000);
+        player.anims.play('turn');
+        scoreText.setText('GAME OVER ... your final score: ' + score)
+        gameOver = true;
+    }
+
+    
+
+
+    if (greenEyes.countActive(true) === 0)
+    {  
+        allGreenCollected = true
+    }
+        //  A new batch of eyes to collect
+    if (allRedCollected && allGreenCollected) {
+        green = false
+        red = false
+        player.setTint(0xffffff);
+        greenEyes.children.iterate(function (child) {
+            child.enableBody(true, child.x, 10, true, true);
+            child.setVelocity(Phaser.Math.Between(-150, 150), 10);
+        });
+        redEyes.children.iterate(function (child) {
+            child.enableBody(true, child.x, 10, true, true);
+            child.setVelocity(Phaser.Math.Between(-150, 150, 10));
+        });
+        allRedCollected = false
+        allGreenCollected = false
+        }
+
+   
+
+    
+}
+
+
+function touchRedBall (player, redBall){
+    if (red !==true){
+        portalSound.play();
+    }
+    green = false;
+    red = true;
+    player.setTint(0xff0000);
+}
+
+function touchGreenBall (player, greenBall){
+    if (green !==true){
+        portalSound.play();
+    }
+    red = false;
+    green = true;
+    player.setTint(0x00ff00);
+}
+
+
+
+</script>
+
+</body>
+</html>
